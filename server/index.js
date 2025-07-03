@@ -137,8 +137,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', async () => {
-    console.log('user disconnected');
     const { roomId, userId } = socket; // Retrieve roomId and userId from socket
+    console.log(`[disconnect] User ${userId} disconnected from room ${roomId}`);
 
     if (roomId && userId) {
       const roomRef = db.collection('rooms').doc(roomId);
@@ -146,6 +146,7 @@ io.on('connection', (socket) => {
 
       try {
         // Decrement user count in room document
+        console.log(`[disconnect] Attempting to decrement user count for room ${roomId}`);
         await roomRef.update({
           userCount: admin.firestore.FieldValue.increment(-1),
         });
@@ -157,31 +158,48 @@ io.on('connection', (socket) => {
 
         // Check if user count is zero and delete room if so
         const roomDoc = await roomRef.get();
-        if (roomDoc.exists && roomDoc.data().userCount <= 0) {
-          console.log(`[disconnect] Room ${roomId} has no active users. Deleting room.`);
-          // Delete all drawings subcollection
-          const drawingsRef = roomRef.collection('drawings');
-          const snapshot = await drawingsRef.get();
-          const batch = db.batch();
-          snapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-          console.log(`[disconnect] Deleted all drawings for room ${roomId}`);
+        if (roomDoc.exists) {
+          const currentUserCount = roomDoc.data().userCount;
+          console.log(`[disconnect] Current user count for room ${roomId}: ${currentUserCount}`);
+          if (currentUserCount <= 0) {
+            console.log(`[disconnect] Room ${roomId} has no active users. Deleting room.`);
+            
+            // Delete all drawings subcollection
+            const drawingsRef = roomRef.collection('drawings');
+            const snapshot = await drawingsRef.get();
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            if (snapshot.size > 0) {
+              await batch.commit();
+              console.log(`[disconnect] Deleted ${snapshot.size} drawings for room ${roomId}`);
+            } else {
+              console.log(`[disconnect] No drawings to delete for room ${roomId}`);
+            }
 
-          // Delete all users subcollection
-          const usersRef = roomRef.collection('users');
-          const usersSnapshot = await usersRef.get();
-          const usersBatch = db.batch();
-          usersSnapshot.docs.forEach((doc) => {
-            usersBatch.delete(doc.ref);
-          });
-          await usersBatch.commit();
-          console.log(`[disconnect] Deleted all users for room ${roomId}`);
+            // Delete all users subcollection
+            const usersRef = roomRef.collection('users');
+            const usersSnapshot = await usersRef.get();
+            const usersBatch = db.batch();
+            usersSnapshot.docs.forEach((doc) => {
+              usersBatch.delete(doc.ref);
+            });
+            if (usersSnapshot.size > 0) {
+              await usersBatch.commit();
+              console.log(`[disconnect] Deleted ${usersSnapshot.size} user presence documents for room ${roomId}`);
+            } else {
+              console.log(`[disconnect] No user presence documents to delete for room ${roomId}`);
+            }
 
-          // Finally, delete the room document itself
-          await roomRef.delete();
-          console.log(`[disconnect] Room ${roomId} deleted from Firestore`);
+            // Finally, delete the room document itself
+            await roomRef.delete();
+            console.log(`[disconnect] Room ${roomId} deleted from Firestore`);
+          } else {
+            console.log(`[disconnect] Room ${roomId} still has active users (${currentUserCount}). Not deleting.`);
+          }
+        } else {
+          console.log(`[disconnect] Room ${roomId} document does not exist after disconnect. Already deleted?`);
         }
       } catch (error) {
         console.error(`[disconnect] Error handling disconnect for room ${roomId}:`, error);

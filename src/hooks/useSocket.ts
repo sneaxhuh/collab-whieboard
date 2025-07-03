@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DrawingData, User, CursorData } from '../types/whiteboard';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
@@ -11,8 +11,17 @@ export const useSocket = (roomId: string, user: User | null) => {
   const [users, setUsers] = useState<User[]>([]);
   const [drawings, setDrawings] = useState<DrawingData[]>([]);
 
+  const socketRef = useRef<Socket | null>(null);
+
   useEffect(() => {
+    console.log('[useSocket useEffect] Triggered with roomId:', roomId, 'user:', user);
+
     if (!user || !roomId) {
+      if (socketRef.current) {
+        console.log('[useSocket useEffect] Disconnecting existing socket due to missing user or roomId.');
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
       setSocket(null);
       setIsConnected(false);
       setUsers([]);
@@ -20,31 +29,41 @@ export const useSocket = (roomId: string, user: User | null) => {
       return;
     }
 
+    if (socketRef.current && socketRef.current.connected && socketRef.current.io.opts.query?.roomId === roomId) {
+      console.log('[useSocket useEffect] Socket already connected to the correct room. Skipping reconnection.');
+      return;
+    }
+
     const connectSocket = async () => {
+      console.log('[useSocket] Attempting to connect socket...');
       const idToken = await auth.currentUser?.getIdToken();
       const newSocket = io('http://localhost:3001', {
         auth: {
           token: idToken,
         },
+        query: {
+          roomId: roomId,
+        },
       });
+
+      socketRef.current = newSocket;
+      setSocket(newSocket);
 
       const userDocRef = doc(db, 'rooms', roomId, 'users', user.id);
 
       newSocket.on('connect', async () => {
-        console.log('Connected to socket server');
+        console.log('[useSocket] Connected to socket server');
         setIsConnected(true);
         newSocket.emit('joinRoom', roomId);
 
-        // Add user to Firestore when connected
         await setDoc(userDocRef, { name: user.name, color: user.color, lastSeen: Date.now() });
       });
 
       newSocket.on('disconnect', async () => {
-        console.log('Disconnected from socket server');
+        console.log('[useSocket] Disconnected from socket server');
         setIsConnected(false);
         setDrawings([]);
 
-        // Remove user from Firestore when disconnected
         await deleteDoc(userDocRef);
       });
 
@@ -60,7 +79,6 @@ export const useSocket = (roomId: string, user: User | null) => {
         setDrawings([]);
       });
 
-      // Listen for real-time user updates from Firestore
       const usersCollectionRef = collection(db, 'rooms', roomId, 'users');
       const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
         const currentUsers: User[] = [];
@@ -71,11 +89,11 @@ export const useSocket = (roomId: string, user: User | null) => {
         setUsers(currentUsers);
       });
 
-      setSocket(newSocket);
-
       return () => {
+        console.log('[useSocket useEffect cleanup] Disconnecting socket and unsubscribing Firestore listener.');
         newSocket.disconnect();
-        unsubscribe(); // Unsubscribe from Firestore listener
+        unsubscribe();
+        socketRef.current = null;
       };
     };
 
