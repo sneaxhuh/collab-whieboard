@@ -8,7 +8,7 @@ import { RoomManager } from './components/RoomManager';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { useSocket } from './hooks/useSocket';
 import { DrawingTool, DrawingData, User } from './types/whiteboard';
-import { generateUserColor, getRandomUserName } from './utils/colors';
+import { generateUserColor } from './utils/colors';
 import { exportCanvasAsPNG, exportCanvasAsPDF } from './utils/export';
 
 function App() {
@@ -30,13 +30,14 @@ function App() {
   
   // Always call useSocket - it will handle null user internally
   const {
-    socket,
     isConnected,
     users,
     drawings,
     emitDrawing,
     emitCursor,
     clearCanvas,
+    emitUndo,
+    emitRedo,
   } = useSocket(roomId, currentUser);
 
   const handleJoinRoom = useCallback((id: string, userName: string) => {
@@ -80,20 +81,18 @@ function App() {
       const previousState = undoStack[undoStack.length - 1];
       setRedoStack(prev => [...prev, drawings]);
       setUndoStack(prev => prev.slice(0, -1));
-      // In a real app, you'd emit this to other users
-      console.log('Undo to state:', previousState);
+      emitUndo(previousState);
     }
-  }, [undoStack, drawings]);
+  }, [undoStack, drawings, emitUndo]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
       const nextState = redoStack[redoStack.length - 1];
       setUndoStack(prev => [...prev, drawings]);
       setRedoStack(prev => prev.slice(0, -1));
-      // In a real app, you'd emit this to other users
-      console.log('Redo to state:', nextState);
+      emitRedo(nextState);
     }
-  }, [redoStack, drawings]);
+  }, [redoStack, drawings, emitRedo]);
 
   const handleSave = useCallback(() => {
     const canvas = canvasRef.current;

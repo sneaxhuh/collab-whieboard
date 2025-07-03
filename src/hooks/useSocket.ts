@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DrawingData, User, CursorData } from '../types/whiteboard';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
@@ -9,8 +9,6 @@ export const useSocket = (roomId: string, user: User | null) => {
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [drawings, setDrawings] = useState<DrawingData[]>([]);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     if (!user || !roomId) {
@@ -94,6 +92,18 @@ export const useSocket = (roomId: string, user: User | null) => {
     }
   };
 
+  const emitUndo = (newDrawings: DrawingData[]) => {
+    if (socket && isConnected && user) {
+      socket.emit('undo', { roomId, drawings: newDrawings });
+    }
+  };
+
+  const emitRedo = (newDrawings: DrawingData[]) => {
+    if (socket && isConnected && user) {
+      socket.emit('redo', { roomId, drawings: newDrawings });
+    }
+  };
+
   useEffect(() => {
     if (socket && user) {
       socket.on('draw', (drawingData: DrawingData) => {
@@ -113,6 +123,14 @@ export const useSocket = (roomId: string, user: User | null) => {
       socket.on('clear', () => {
         setDrawings([]);
       });
+
+      socket.on('undo', (data: { drawings: DrawingData[] }) => {
+        setDrawings(data.drawings);
+      });
+
+      socket.on('redo', (data: { drawings: DrawingData[] }) => {
+        setDrawings(data.drawings);
+      });
     }
   }, [socket, user]);
 
@@ -124,5 +142,7 @@ export const useSocket = (roomId: string, user: User | null) => {
     emitDrawing,
     emitCursor,
     clearCanvas,
+    emitUndo,
+    emitRedo,
   };
 };

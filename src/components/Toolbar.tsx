@@ -13,7 +13,6 @@ import {
   Trash2,
   Download,
   Users,
-  Settings,
   MousePointer
 } from 'lucide-react';
 import { DrawingTool } from '../types/whiteboard';

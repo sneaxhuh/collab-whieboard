@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Users, Lock, Unlock, Share2, X } from 'lucide-react';
+import { Share2, X } from 'lucide-react';
 import { User } from '../types/whiteboard';
 
 interface RoomManagerProps {

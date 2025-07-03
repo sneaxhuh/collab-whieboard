@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { DrawingData, Point, DrawingTool, User, CursorData } from '../types/whiteboard';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -185,7 +185,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
         ctx.restore();
       }
     });
-  }, [drawings, currentPath, startPoint, tool, color, strokeWidth, users, currentUser, drawOnCanvas]);
+  }, [drawings, currentPath, startPoint, tool, color, strokeWidth, users, currentUser, drawOnCanvas, ref]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -197,7 +197,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
     canvas.height = rect.height;
 
     redrawCanvas();
-  }, [redrawCanvas]);
+  }, [redrawCanvas, ref]);
 
   const getPointFromEvent = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
     const canvas = ref.current;

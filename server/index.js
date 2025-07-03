@@ -56,6 +56,47 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('clear');
   });
 
+  socket.on('cursor', (data) => {
+    // Broadcast cursor data to all clients in the room except the sender
+    socket.to(data.roomId).emit('cursor', data);
+  });
+
+  socket.on('undo', async (data) => {
+    // Update drawings in Firestore
+    const drawingsRef = db.collection('rooms').doc(data.roomId).collection('drawings');
+    const snapshot = await drawingsRef.get();
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    for (const drawing of data.drawings) {
+      await drawingsRef.add(drawing);
+    }
+
+    // Broadcast undo event to all clients in the room
+    io.to(data.roomId).emit('undo', { drawings: data.drawings });
+  });
+
+  socket.on('redo', async (data) => {
+    // Update drawings in Firestore
+    const drawingsRef = db.collection('rooms').doc(data.roomId).collection('drawings');
+    const snapshot = await drawingsRef.get();
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    for (const drawing of data.drawings) {
+      await drawingsRef.add(drawing);
+    }
+
+    // Broadcast redo event to all clients in the room
+    io.to(data.roomId).emit('redo', { drawings: data.drawings });
+  });
+
   socket.on('disconnect', () => {
     console.log('user disconnected');
   });

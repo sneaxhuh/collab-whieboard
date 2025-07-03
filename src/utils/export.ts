@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export const exportCanvasAsPNG = (canvas: HTMLCanvasElement, filename: string = 'whiteboard.png') => {
   const link = document.createElement('a');
