@@ -19,15 +19,54 @@ const io = new Server(server, {
   }
 });
 
+io.use(async (socket, next) => {
+  const idToken = socket.handshake.auth.token;
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    socket.decodedToken = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error.message);
+    next(new Error('Authentication error'));
+  }
+});
+
 io.on('connection', (socket) => {
   console.log('a user connected');
+  const userId = socket.decodedToken.uid;
+  const userName = socket.decodedToken.name || socket.decodedToken.email || 'Anonymous';
 
-  socket.on('joinRoom', async (roomId, user) => {
+  socket.on('joinRoom', async (roomId) => {
     socket.join(roomId);
-    console.log(`User ${user.name} (${socket.id}) joined room ${roomId}`);
+    socket.roomId = roomId; // Store roomId on socket
+    socket.userId = userId; // Store userId on socket
+    console.log(`[joinRoom] User ${userName} (${userId}) joined room ${roomId}`);
+
+    // Ensure the room document exists in Firestore and update user count
+    const roomRef = db.collection('rooms').doc(roomId);
+    try {
+      const roomDoc = await roomRef.get();
+      if (!roomDoc.exists) {
+        console.log(`[joinRoom] Room ${roomId} does not exist. Creating...`);
+        await roomRef.set({
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdBy: userId,
+          userCount: 1, // Initialize user count
+        });
+        console.log(`[joinRoom] Room ${roomId} successfully created in Firestore`);
+      } else {
+        console.log(`[joinRoom] Room ${roomId} already exists in Firestore. Incrementing user count.`);
+        await roomRef.update({
+          userCount: admin.firestore.FieldValue.increment(1),
+        });
+      }
+    } catch (error) {
+      console.error(`[joinRoom] Error checking/creating/updating room ${roomId} in Firestore:`, error);
+    }
 
     // Send existing drawings from Firestore to the newly joined user
-    const drawingsRef = db.collection('rooms').doc(roomId).collection('drawings');
+    const drawingsRef = roomRef.collection('drawings');
     const snapshot = await drawingsRef.orderBy('timestamp').get();
     const initialDrawings = snapshot.docs.map(doc => doc.data());
     socket.emit('initialDrawings', initialDrawings);
@@ -36,10 +75,10 @@ io.on('connection', (socket) => {
   socket.on('draw', async (data) => {
     // Add drawing to Firestore
     const drawingsRef = db.collection('rooms').doc(data.roomId).collection('drawings');
-    await drawingsRef.add(data);
+    await drawingsRef.add({ ...data, userId });
 
     // Broadcast drawing to all clients in the room
-    io.to(data.roomId).emit('draw', data);
+    io.to(data.roomId).emit('draw', { ...data, userId });
   });
 
   socket.on('clear', async (roomId) => {
@@ -58,7 +97,7 @@ io.on('connection', (socket) => {
 
   socket.on('cursor', (data) => {
     // Broadcast cursor data to all clients in the room except the sender
-    socket.to(data.roomId).emit('cursor', data);
+    socket.to(data.roomId).emit('cursor', { ...data, userId });
   });
 
   socket.on('undo', async (data) => {
@@ -97,8 +136,57 @@ io.on('connection', (socket) => {
     io.to(data.roomId).emit('redo', { drawings: data.drawings });
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('user disconnected');
+    const { roomId, userId } = socket; // Retrieve roomId and userId from socket
+
+    if (roomId && userId) {
+      const roomRef = db.collection('rooms').doc(roomId);
+      const userDocRef = roomRef.collection('users').doc(userId);
+
+      try {
+        // Decrement user count in room document
+        await roomRef.update({
+          userCount: admin.firestore.FieldValue.increment(-1),
+        });
+        console.log(`[disconnect] Decremented user count for room ${roomId}`);
+
+        // Delete user's presence document
+        await userDocRef.delete();
+        console.log(`[disconnect] Deleted user ${userId} from room ${roomId} presence`);
+
+        // Check if user count is zero and delete room if so
+        const roomDoc = await roomRef.get();
+        if (roomDoc.exists && roomDoc.data().userCount <= 0) {
+          console.log(`[disconnect] Room ${roomId} has no active users. Deleting room.`);
+          // Delete all drawings subcollection
+          const drawingsRef = roomRef.collection('drawings');
+          const snapshot = await drawingsRef.get();
+          const batch = db.batch();
+          snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+          console.log(`[disconnect] Deleted all drawings for room ${roomId}`);
+
+          // Delete all users subcollection
+          const usersRef = roomRef.collection('users');
+          const usersSnapshot = await usersRef.get();
+          const usersBatch = db.batch();
+          usersSnapshot.docs.forEach((doc) => {
+            usersBatch.delete(doc.ref);
+          });
+          await usersBatch.commit();
+          console.log(`[disconnect] Deleted all users for room ${roomId}`);
+
+          // Finally, delete the room document itself
+          await roomRef.delete();
+          console.log(`[disconnect] Room ${roomId} deleted from Firestore`);
+        }
+      } catch (error) {
+        console.error(`[disconnect] Error handling disconnect for room ${roomId}:`, error);
+      }
+    }
   });
 });
 

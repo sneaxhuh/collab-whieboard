@@ -12,21 +12,3 @@ export const generateUserColor = (userId: string): string => {
   
   return colors[Math.abs(hash) % colors.length];
 };
-
-export const getRandomUserName = (): string => {
-  const adjectives = [
-    'Creative', 'Artistic', 'Brilliant', 'Clever', 'Innovative',
-    'Talented', 'Skilled', 'Inspiring', 'Dynamic', 'Visionary'
-  ];
-  
-  const nouns = [
-    'Artist', 'Designer', 'Creator', 'Painter', 'Sketcher',
-    'Illustrator', 'Doodler', 'Architect', 'Builder', 'Maker'
-  ];
-  
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const number = Math.floor(Math.random() * 999) + 1;
-  
-  return `${adjective}${noun}${number}`;
-};

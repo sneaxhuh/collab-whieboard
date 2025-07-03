@@ -1,32 +1,61 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Settings } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Settings, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from './firebase';
 
 import { Canvas } from './components/Canvas';
 import { Toolbar } from './components/Toolbar';
 import { RoomManager } from './components/RoomManager';
-import { WelcomeScreen } from './components/WelcomeScreen';
+import { AuthScreen } from './components/AuthScreen';
+import { RoomSelectionScreen } from './components/RoomSelectionScreen';
 import { useSocket } from './hooks/useSocket';
 import { DrawingTool, DrawingData, User } from './types/whiteboard';
 import { generateUserColor } from './utils/colors';
 import { exportCanvasAsPNG, exportCanvasAsPDF } from './utils/export';
+import { db } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [roomId, setRoomId] = useState<string>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('room') || '';
-  });
+  const [roomId, setRoomId] = useState<string>('');
+  const [roomSelected, setRoomSelected] = useState(false);
+  const [roomError, setRoomError] = useState<string | null>(null);
   const [tool, setTool] = useState<DrawingTool>('pen');
-  const [color, setColor] = useState('#000000');
+  const [color, ] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fillMode, setFillMode] = useState(false);
   const [fontSize, setFontSize] = useState(16);
   const [undoStack, setUndoStack] = useState<DrawingData[][]>([]);
   const [redoStack, setRedoStack] = useState<DrawingData[][]>([]);
   const [showRoomManager, setShowRoomManager] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser({
+          id: user.uid,
+          name: user.displayName || user.email || 'Anonymous',
+          color: generateUserColor(user.uid),
+        });
+        // Check URL for room ID only after user is authenticated
+        const params = new URLSearchParams(window.location.search);
+        const urlRoomId = params.get('room');
+        if (urlRoomId) {
+          setRoomId(urlRoomId);
+          setRoomSelected(true);
+        }
+      } else {
+        setCurrentUser(null);
+        setRoomSelected(false); // Reset room selection on logout
+      }
+      setLoadingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
   
   // Always call useSocket - it will handle null user internally
   const {
@@ -40,27 +69,39 @@ function App() {
     emitRedo,
   } = useSocket(roomId, currentUser);
 
-  const handleJoinRoom = useCallback((id: string, userName: string) => {
-    const user: User = {
-      id: uuidv4(),
-      name: userName,
-      color: generateUserColor(userName),
-    };
-    
-    setCurrentUser(user);
-    setRoomId(id);
-    
-    // Update URL without page reload
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('room', id);
-    window.history.replaceState({}, '', newUrl);
+  const handleRoomSelection = useCallback(async (selectedRoomId: string) => {
+    setRoomError(null);
+    if (selectedRoomId) {
+      // Check if room exists in Firestore
+      const roomRef = doc(db, 'rooms', selectedRoomId);
+      const roomSnap = await getDoc(roomRef);
+
+      if (roomSnap.exists()) {
+        setRoomId(selectedRoomId);
+        setRoomSelected(true);
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('room', selectedRoomId);
+        window.history.replaceState({}, '', newUrl);
+      } else {
+        setRoomError('Room does not exist. Please create a new room or enter a valid ID.');
+      }
+    } else {
+      // Create new room
+      const newRoomId = uuidv4();
+      setRoomId(newRoomId);
+      setRoomSelected(true);
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('room', newRoomId);
+      window.history.replaceState({}, '', newUrl);
+    }
   }, []);
 
   const handleLeaveRoom = useCallback(() => {
-    setCurrentUser(null);
     setRoomId('');
+    setRoomSelected(false);
     setUndoStack([]);
     setRedoStack([]);
+    signOut(auth); // Sign out from Firebase
     
     // Clear URL params
     const newUrl = new URL(window.location.href);
@@ -114,9 +155,16 @@ function App() {
     }
   }, [drawings, clearCanvas]);
 
-  // If no user is logged in, show welcome screen
+  if (loadingAuth) {
+    return <div className="min-h-screen flex items-center justify-center">Loading authentication...</div>;
+  }
+
   if (!currentUser) {
-    return <WelcomeScreen onJoinRoom={handleJoinRoom} />;
+    return <AuthScreen onAuthSuccess={() => {}} />;
+  }
+
+  if (!roomSelected) {
+    return <RoomSelectionScreen onJoinRoom={handleRoomSelection} roomError={roomError} />;
   }
 
   return (
@@ -127,6 +175,15 @@ function App() {
         className="fixed top-4 right-4 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
       >
         <Settings size={20} className="text-gray-600" />
+      </button>
+
+      {/* Logout Button */}
+      <button
+        onClick={handleLeaveRoom}
+        className="fixed top-4 right-20 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        title="Logout"
+      >
+        <LogOut size={20} className="text-gray-600" />
       </button>
 
       {/* Room Manager */}
@@ -141,9 +198,8 @@ function App() {
       {/* Toolbar */}
       <Toolbar
         tool={tool}
-        onToolChange={setTool}
         color={color}
-        onColorChange={setColor}
+        onToolChange={setTool}
         strokeWidth={strokeWidth}
         onStrokeWidthChange={setStrokeWidth}
         fillMode={fillMode}
