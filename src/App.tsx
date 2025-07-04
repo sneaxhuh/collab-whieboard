@@ -22,7 +22,7 @@ function App() {
   const [roomSelected, setRoomSelected] = useState(false);
   const [roomError, setRoomError] = useState<string | null>(null);
   const [tool, setTool] = useState<DrawingTool>('pen');
-  const [color, ] = useState('#000000');
+  const [color, setColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fillMode, setFillMode] = useState(false);
   const [fontSize, setFontSize] = useState(16);
@@ -199,6 +199,7 @@ function App() {
       <Toolbar
         tool={tool}
         color={color}
+        onColorChange={setColor}
         onToolChange={setTool}
         strokeWidth={strokeWidth}
         onStrokeWidthChange={setStrokeWidth}
