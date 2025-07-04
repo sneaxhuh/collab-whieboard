@@ -149,11 +149,9 @@ function App() {
   }, [roomId]);
 
   const handleClear = useCallback(() => {
-    if (window.confirm('Are you sure you want to clear the entire canvas?')) {
-      setUndoStack(prev => [...prev, drawings]);
-      setRedoStack([]);
-      clearCanvas();
-    }
+    setUndoStack(prev => [...prev, drawings]);
+    setRedoStack([]);
+    clearCanvas();
   }, [drawings, clearCanvas]);
 
   if (loadingAuth) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Share2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { User } from '../types/whiteboard';
 
 interface RoomManagerProps {
@@ -19,14 +19,13 @@ export const RoomManager: React.FC<RoomManagerProps> = ({
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const copyRoomLink = async () => {
+  const copyRoomId = async () => {
     try {
-      const url = `${window.location.origin}?room=${roomId}`;
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(roomId);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error('Failed to copy room link:', err);
+      console.error('Failed to copy room ID:', err);
     }
   };
 
@@ -58,14 +57,14 @@ export const RoomManager: React.FC<RoomManagerProps> = ({
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
             />
             <button
-              onClick={copyRoomLink}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              onClick={copyRoomId}
+              className={`w-24 py-2 rounded-lg text-sm font-medium transition-colors ${
                 copySuccess
                   ? 'bg-green-100 text-green-600'
                   : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
               }`}
             >
-              {copySuccess ? 'Copied!' : 'Copy Link'}
+              {copySuccess ? 'Copied!' : 'Copy ID'}
             </button>
           </div>
         </div>
@@ -94,11 +93,10 @@ export const RoomManager: React.FC<RoomManagerProps> = ({
         {/* Share Button */}
         <div className="mb-4">
           <button
-            onClick={copyRoomLink}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            onClick={copyRoomId}
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
-            <Share2 size={16} />
-            <span>Share Room</span>
+            <span>Copy ID</span>
           </button>
         </div>
 
