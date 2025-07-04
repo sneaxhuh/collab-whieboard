@@ -73,135 +73,132 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-10">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-4">
-        <div className="flex items-center space-x-4">
-          {/* Drawing Tools */}
-          <div className="flex items-center space-x-2">
-            {tools.map((t) => (
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-4 flex items-center justify-center flex-wrap lg:flex-nowrap gap-y-3 lg:gap-y-0 gap-x-4">
+        {/* Drawing Tools */}
+        <div className="flex items-center space-x-2">
+          {tools.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onToolChange(t.id)}
+              className={`p-3 rounded-xl transition-all duration-200 ${
+                tool === t.id
+                  ? 'bg-blue-500 text-white shadow-lg scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={t.label}
+            >
+              <t.icon size={20} />
+            </button>
+          ))}
+        </div>
+
+        <div className="w-px h-8 bg-gray-300" />
+
+        {/* Color Picker */}
+        <div className="flex items-center space-x-2">
+          <Palette size={20} className="text-gray-600" />
+          <div className="flex items-center space-x-1">
+            {colors.map((c) => (
               <button
-                key={t.id}
-                onClick={() => onToolChange(t.id)}
-                className={`p-3 rounded-xl transition-all duration-200 ${
-                  tool === t.id
-                    ? 'bg-blue-500 text-white shadow-lg scale-105'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                key={c}
+                onClick={() => onColorChange(c)}
+                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  color === c ? 'border-gray-800 scale-110' : 'border-gray-300'
                 }`}
-                title={t.label}
-              >
-                <t.icon size={20} />
-              </button>
+                style={{ backgroundColor: c }}
+              />
             ))}
           </div>
+        </div>
 
-          <div className="w-px h-8 bg-gray-300" />
+        <div className="w-px h-8 bg-gray-300" />
 
-          {/* Color Picker */}
-          <div className="flex items-center space-x-2">
-            <Palette size={20} className="text-gray-600" />
-            <div className="flex items-center space-x-1">
-              {colors.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => onColorChange(c)}
-                  className={`w-6 h-6 rounded-full border-2 transition-all ${
-                    color === c ? 'border-gray-800 scale-110' : 'border-gray-300'
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
+        {/* Stroke Width */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onStrokeWidthChange(Math.max(1, strokeWidth - 1))}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <Minus size={16} />
+          </button>
+          <span className="text-sm font-medium w-6 text-center">{strokeWidth}</span>
+          <button
+            onClick={() => onStrokeWidthChange(Math.min(20, strokeWidth + 1))}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
 
-          <div className="w-px h-8 bg-gray-300" />
-
-          {/* Stroke Width */}
-          <div className="flex items-center space-x-2">
+        {/* Fill Mode for Shapes */}
+        {(tool === 'rectangle' || tool === 'circle') && (
+          <>
+            <div className="w-px h-8 bg-gray-300" />
             <button
-              onClick={() => onStrokeWidthChange(Math.max(1, strokeWidth - 1))}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="text-sm font-medium w-6 text-center">{strokeWidth}</span>
-            <button
-              onClick={() => onStrokeWidthChange(Math.min(20, strokeWidth + 1))}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-
-          {/* Fill Mode for Shapes */}
-          {(tool === 'rectangle' || tool === 'circle') && (
-            <>
-              <div className="w-px h-8 bg-gray-300" />
-              <button
-                onClick={() => onFillModeChange(!fillMode)}
-                className={`px-3 py-2 rounded-lg text-sm transition-all ${
-                  fillMode
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Fill
-              </button>
-            </>
-          )}
-
-          <div className="w-px h-8 bg-gray-300" />
-
-          {/* Actions */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              className={`p-2 rounded-lg transition-all ${
-                canUndo
-                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+              onClick={() => onFillModeChange(!fillMode)}
+              className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                fillMode
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
-              title="Undo"
             >
-              <Undo size={16} />
+              Fill
             </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              className={`p-2 rounded-lg transition-all ${
-                canRedo
-                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-              }`}
-              title="Redo"
-            >
-              <Redo size={16} />
-            </button>
-            <button
-              onClick={onClear}
-              className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-              title="Clear Canvas"
-            >
-              <Trash2 size={16} />
-            </button>
-            <button
-              onClick={onSave}
-              className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
-              title="Save Canvas"
-            >
-              <Download size={16} />
-            </button>
-          </div>
+          </>
+        )}
 
-          <div className="w-px h-8 bg-gray-300" />
+        <div className="w-px h-8 bg-gray-300" />
 
-          {/* User Count */}
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <Users size={16} />
-            <span>{userCount}</span>
-          </div>
+        {/* Actions */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className={`p-2 rounded-lg transition-all ${
+              canUndo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Undo"
+          >
+            <Undo size={16} />
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className={`p-2 rounded-lg transition-all ${
+              canRedo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Redo"
+          >
+            <Redo size={16} />
+          </button>
+          <button
+            onClick={onClear}
+            className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+            title="Clear Canvas"
+          >
+            <Trash2 size={16} />
+          </button>
+          <button
+            onClick={onSave}
+            className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+            title="Save Canvas"
+          >
+            <Download size={16} />
+          </button>
+        </div>
+
+        <div className="w-px h-8 bg-gray-300" />
+
+        {/* User Count */}
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <Users size={16} />
+          <span>{userCount}</span>
         </div>
       </div>
-      
     </div>
   );
 };

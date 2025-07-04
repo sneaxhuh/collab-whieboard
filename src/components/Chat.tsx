@@ -1,14 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types/whiteboard';
 
-interface ChatMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  text: string;
-  timestamp: number;
-}
-
 interface ChatProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
@@ -47,7 +39,10 @@ export const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, currentUser
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white rounded-xl shadow-xl flex flex-col z-20 border border-gray-200">
+    <div 
+      className={`fixed right-4 w-full max-w-xs bg-white rounded-xl shadow-xl flex flex-col z-20 border border-gray-200 sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl`}
+      style={{ bottom: isOpen ? 'calc(4rem + 16px)' : '4rem' }} // 4rem for buttons + 16px for spacing
+    >
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
         <h3 className="text-lg font-bold text-gray-800">Room Chat</h3>
         <button onClick={onToggle} className="text-gray-500 hover:text-gray-700 transition-colors duration-200">

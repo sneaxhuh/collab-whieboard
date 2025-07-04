@@ -32,7 +32,10 @@ export const RoomManager: React.FC<RoomManagerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-20 w-80">
+    <div 
+      className="fixed right-4 z-20 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl"
+      style={{ bottom: isOpen ? 'calc(4rem + 16px)' : '4rem' }} // 4rem for buttons + 16px for spacing
+    >
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Room Settings</h3>

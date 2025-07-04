@@ -184,11 +184,16 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Room Manager Toggle */}
-      <button
-        onClick={() => setShowRoomManager(!showRoomManager)}
-        className="fixed top-4 right-4 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+    <div className="bg-gray-50 flex flex-col">
+      {/* Action Buttons Container */}
+      <div className="fixed bottom-4 right-4 z-30 flex items-center space-x-4">
+        {/* Room Manager Toggle */}
+        <button
+        onClick={() => {
+          setShowRoomManager(!showRoomManager);
+          if (showChat) setShowChat(false);
+        }}
+        className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
       >
         <Settings size={20} className="text-gray-600" />
       </button>
@@ -196,7 +201,7 @@ function App() {
       {/* Logout Button */}
       <button
         onClick={handleLeaveRoom}
-        className="fixed top-4 right-20 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
         title="Logout"
       >
         <LogOut size={20} className="text-gray-600" />
@@ -204,14 +209,16 @@ function App() {
 
       {/* Chat Toggle */}
       <button
-        onClick={() => setShowChat(!showChat)}
-        className="fixed top-4 right-36 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        onClick={() => {
+          setShowChat(!showChat);
+          if (showRoomManager) setShowRoomManager(false);
+        }}
+        className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
         title="Toggle Chat"
       >
         <MessageSquare size={20} className="text-gray-600" />
       </button>
-
-      
+      </div>
 
       {/* Room Manager */}
       <RoomManager
@@ -265,7 +272,7 @@ function App() {
       </div>
 
       {/* Canvas */}
-      <div className="pt-24 h-screen">
+      <div className="pt-24 flex-grow">
         <Canvas
           ref={canvasRef}
           tool={tool}
