@@ -150,21 +150,23 @@ io.on('connection', (socket) => {
       const userDocRef = roomRef.collection('users').doc(userId);
 
       try {
-        // Decrement user count in room document
-        console.log(`[disconnect] Attempting to decrement user count for room ${roomId}`);
-        await roomRef.update({
-          userCount: admin.firestore.FieldValue.increment(-1),
-        });
-        console.log(`[disconnect] Decremented user count for room ${roomId}`);
-
-        // Delete user's presence document
-        await userDocRef.delete();
-        console.log(`[disconnect] Deleted user ${userId} from room ${roomId} presence`);
-
-        // Check if user count is zero and delete room if so
+        // Get the room document first to check its existence
         const roomDoc = await roomRef.get();
+
         if (roomDoc.exists) {
-          const currentUserCount = roomDoc.data().userCount;
+          // Decrement user count in room document
+          console.log(`[disconnect] Attempting to decrement user count for room ${roomId}`);
+          await roomRef.update({
+            userCount: admin.firestore.FieldValue.increment(-1),
+          });
+          console.log(`[disconnect] Decremented user count for room ${roomId}`);
+
+          // Delete user's presence document
+          await userDocRef.delete();
+          console.log(`[disconnect] Deleted user ${userId} from room ${roomId} presence`);
+
+          // Check if user count is zero and delete room if so
+          const currentUserCount = (await roomRef.get()).data().userCount; // Re-fetch to get latest count
           console.log(`[disconnect] Current user count for room ${roomId}: ${currentUserCount}`);
           if (currentUserCount <= 0) {
             console.log(`[disconnect] Room ${roomId} has no active users. Deleting room.`);
@@ -204,7 +206,7 @@ io.on('connection', (socket) => {
             console.log(`[disconnect] Room ${roomId} still has active users (${currentUserCount}). Not deleting.`);
           }
         } else {
-          console.log(`[disconnect] Room ${roomId} document does not exist after disconnect. Already deleted?`);
+          console.log(`[disconnect] Room ${roomId} document does not exist. It might have been deleted by another user.`);
         }
       } catch (error) {
         console.error(`[disconnect] Error handling disconnect for room ${roomId}:`, error);
