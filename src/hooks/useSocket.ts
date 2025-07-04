@@ -31,12 +31,13 @@ export const useSocket = (roomId: string, user: User | null) => {
       return;
     }
 
-    if (socketRef.current && socketRef.current.connected && socketRef.current.io.opts.query?.roomId === roomId) {
-      console.log('[useSocket useEffect] Socket already connected to the correct room. Skipping reconnection.');
-      return;
-    }
-
     const connectSocket = async () => {
+      // Disconnect any existing socket before creating a new one
+      if (socketRef.current) {
+        console.log('[useSocket] Disconnecting previous socket before new connection attempt.');
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
       console.log('[useSocket] Attempting to connect socket...');
       const idToken = await auth.currentUser?.getIdToken();
       const newSocket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001', {
