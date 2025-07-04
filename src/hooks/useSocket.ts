@@ -39,7 +39,7 @@ export const useSocket = (roomId: string, user: User | null) => {
     const connectSocket = async () => {
       console.log('[useSocket] Attempting to connect socket...');
       const idToken = await auth.currentUser?.getIdToken();
-      const newSocket = io('http://localhost:3001', {
+      const newSocket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001', {
         auth: {
           token: idToken,
         },
