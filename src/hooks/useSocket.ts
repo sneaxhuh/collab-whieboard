@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { DrawingData, User, CursorData } from '../types/whiteboard';
+import { DrawingData, User, CursorData, ChatMessage } from '../types/whiteboard';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { auth } from '../firebase';
@@ -10,6 +10,7 @@ export const useSocket = (roomId: string, user: User | null) => {
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [drawings, setDrawings] = useState<DrawingData[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -26,6 +27,7 @@ export const useSocket = (roomId: string, user: User | null) => {
       setIsConnected(false);
       setUsers([]);
       setDrawings([]);
+      setMessages([]);
       return;
     }
 
@@ -63,6 +65,7 @@ export const useSocket = (roomId: string, user: User | null) => {
         console.log('[useSocket] Disconnected from socket server');
         setIsConnected(false);
         setDrawings([]);
+        setMessages([]);
 
         await deleteDoc(userDocRef);
       });
@@ -77,6 +80,10 @@ export const useSocket = (roomId: string, user: User | null) => {
 
       newSocket.on('clear', () => {
         setDrawings([]);
+      });
+
+      newSocket.on('chatMessage', (message: ChatMessage) => {
+        setMessages(prev => [...prev, message]);
       });
 
       const usersCollectionRef = collection(db, 'rooms', roomId, 'users');
@@ -132,6 +139,12 @@ export const useSocket = (roomId: string, user: User | null) => {
     }
   };
 
+  const emitMessage = (message: ChatMessage) => {
+    if (socket && isConnected && user) {
+      socket.emit('chatMessage', { ...message, roomId });
+    }
+  };
+
   useEffect(() => {
     if (socket && user) {
       socket.on('draw', (drawingData: DrawingData) => {
@@ -167,10 +180,12 @@ export const useSocket = (roomId: string, user: User | null) => {
     isConnected,
     users,
     drawings,
+    messages,
     emitDrawing,
     emitCursor,
     clearCanvas,
     emitUndo,
     emitRedo,
+    emitMessage,
   };
 };

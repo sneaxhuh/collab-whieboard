@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, MessageSquare } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
@@ -9,8 +9,9 @@ import { Toolbar } from './components/Toolbar';
 import { RoomManager } from './components/RoomManager';
 import { AuthScreen } from './components/AuthScreen';
 import { RoomSelectionScreen } from './components/RoomSelectionScreen';
+import { Chat } from './components/Chat';
 import { useSocket } from './hooks/useSocket';
-import { DrawingTool, DrawingData, User } from './types/whiteboard';
+import { DrawingTool, DrawingData, User, ChatMessage } from './types/whiteboard';
 import { generateUserColor } from './utils/colors';
 import { exportCanvasAsPNG, exportCanvasAsPDF } from './utils/export';
 import { db } from './firebase';
@@ -25,6 +26,7 @@ function App() {
   const [color, setColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fillMode, setFillMode] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   
   const [undoStack, setUndoStack] = useState<DrawingData[][]>([]);
   const [redoStack, setRedoStack] = useState<DrawingData[][]>([]);
@@ -63,11 +65,13 @@ function App() {
     isConnected,
     users,
     drawings,
+    messages,
     emitDrawing,
     emitCursor,
     clearCanvas,
     emitUndo,
     emitRedo,
+    emitMessage,
   } = useSocket(roomId, currentUser);
 
   const handleRoomSelection = useCallback(async (selectedRoomId: string) => {
@@ -154,6 +158,19 @@ function App() {
     clearCanvas();
   }, [drawings, clearCanvas]);
 
+  const handleSendMessage = useCallback((text: string) => {
+    if (currentUser) {
+      const message: ChatMessage = {
+        id: uuidv4(),
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        text,
+        timestamp: Date.now(),
+      };
+      emitMessage(message);
+    }
+  }, [currentUser, emitMessage]);
+
   if (loadingAuth) {
     return <div className="min-h-screen flex items-center justify-center">Loading authentication...</div>;
   }
@@ -185,6 +202,15 @@ function App() {
         <LogOut size={20} className="text-gray-600" />
       </button>
 
+      {/* Chat Toggle */}
+      <button
+        onClick={() => setShowChat(!showChat)}
+        className="fixed top-4 right-36 z-30 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        title="Toggle Chat"
+      >
+        <MessageSquare size={20} className="text-gray-600" />
+      </button>
+
       
 
       {/* Room Manager */}
@@ -194,6 +220,15 @@ function App() {
         onLeaveRoom={handleLeaveRoom}
         isOpen={showRoomManager}
         onToggle={() => setShowRoomManager(!showRoomManager)}
+      />
+
+      {/* Chat */}
+      <Chat
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        currentUser={currentUser}
+        isOpen={showChat}
+        onToggle={() => setShowChat(!showChat)}
       />
 
       {/* Toolbar */}

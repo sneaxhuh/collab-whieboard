@@ -40,3 +40,11 @@ export interface CursorData {
 }
 
 export type DrawingTool = 'pen' | 'rectangle' | 'circle' | 'eraser' | 'select';
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: number;
+}

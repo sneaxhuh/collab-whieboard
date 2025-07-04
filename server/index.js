@@ -136,6 +136,11 @@ io.on('connection', (socket) => {
     io.to(data.roomId).emit('redo', { drawings: data.drawings });
   });
 
+  socket.on('chatMessage', (data) => {
+    // Broadcast chat message to all clients in the room
+    io.to(data.roomId).emit('chatMessage', data);
+  });
+
   socket.on('disconnect', async () => {
     const { roomId, userId } = socket; // Retrieve roomId and userId from socket
     console.log(`[disconnect] User ${userId} disconnected from room ${roomId}`);
