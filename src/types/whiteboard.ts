@@ -10,8 +10,7 @@ export interface DrawingData {
   color: string;
   strokeWidth: number;
   fill?: boolean;
-  text?: string;
-  fontSize?: number;
+  
   timestamp: number;
   userId: string;
 }
@@ -40,4 +39,4 @@ export interface CursorData {
   isDrawing: boolean;
 }
 
-export type DrawingTool = 'pen' | 'rectangle' | 'circle' | 'text' | 'eraser' | 'select';
+export type DrawingTool = 'pen' | 'rectangle' | 'circle' | 'eraser' | 'select';

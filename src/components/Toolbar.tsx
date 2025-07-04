@@ -3,7 +3,6 @@ import {
   Pen, 
   Square, 
   Circle, 
-  Type, 
   Eraser, 
   Palette, 
   Minus,
@@ -26,8 +25,7 @@ interface ToolbarProps {
   onStrokeWidthChange: (width: number) => void;
   fillMode: boolean;
   onFillModeChange: (fill: boolean) => void;
-  fontSize: number;
-  onFontSizeChange: (size: number) => void;
+  
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
@@ -35,6 +33,8 @@ interface ToolbarProps {
   userCount: number;
   canUndo: boolean;
   canRedo: boolean;
+  
+  
 }
 
 const colors = [
@@ -51,8 +51,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onStrokeWidthChange,
   fillMode,
   onFillModeChange,
-  fontSize,
-  onFontSizeChange,
+  
   onUndo,
   onRedo,
   onClear,
@@ -60,13 +59,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   userCount,
   canUndo,
   canRedo,
+  
+  
 }) => {
   const tools = [
     { id: 'select' as DrawingTool, icon: MousePointer, label: 'Select' },
     { id: 'pen' as DrawingTool, icon: Pen, label: 'Pen' },
     { id: 'rectangle' as DrawingTool, icon: Square, label: 'Rectangle' },
     { id: 'circle' as DrawingTool, icon: Circle, label: 'Circle' },
-    { id: 'text' as DrawingTool, icon: Type, label: 'Text' },
+    
     { id: 'eraser' as DrawingTool, icon: Eraser, label: 'Eraser' },
   ];
 
@@ -147,29 +148,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </>
           )}
 
-          {/* Font Size for Text */}
-          {tool === 'text' && (
-            <>
-              <div className="w-px h-8 bg-gray-300" />
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Size:</span>
-                <button
-                  onClick={() => onFontSizeChange(Math.max(8, fontSize - 2))}
-                  className="p-1 rounded bg-gray-100 hover:bg-gray-200"
-                >
-                  <Minus size={12} />
-                </button>
-                <span className="text-sm font-medium w-6 text-center">{fontSize}</span>
-                <button
-                  onClick={() => onFontSizeChange(Math.min(72, fontSize + 2))}
-                  className="p-1 rounded bg-gray-100 hover:bg-gray-200"
-                >
-                  <Plus size={12} />
-                </button>
-              </div>
-            </>
-          )}
-
           <div className="w-px h-8 bg-gray-300" />
 
           {/* Actions */}
@@ -223,6 +201,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </div>
         </div>
       </div>
+      
     </div>
   );
 };

@@ -25,11 +25,12 @@ function App() {
   const [color, setColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fillMode, setFillMode] = useState(false);
-  const [fontSize, setFontSize] = useState(16);
+  
   const [undoStack, setUndoStack] = useState<DrawingData[][]>([]);
   const [redoStack, setRedoStack] = useState<DrawingData[][]>([]);
   const [showRoomManager, setShowRoomManager] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -186,6 +187,8 @@ function App() {
         <LogOut size={20} className="text-gray-600" />
       </button>
 
+      
+
       {/* Room Manager */}
       <RoomManager
         roomId={roomId}
@@ -205,8 +208,7 @@ function App() {
         onStrokeWidthChange={setStrokeWidth}
         fillMode={fillMode}
         onFillModeChange={setFillMode}
-        fontSize={fontSize}
-        onFontSizeChange={setFontSize}
+        
         onUndo={handleUndo}
         onRedo={handleRedo}
         onClear={handleClear}
@@ -214,6 +216,8 @@ function App() {
         userCount={users.length}
         canUndo={undoStack.length > 0}
         canRedo={redoStack.length > 0}
+        
+        
       />
 
       {/* Connection Status */}
@@ -240,7 +244,7 @@ function App() {
           onDrawing={handleDrawing}
           onCursor={emitCursor}
           fillMode={fillMode}
-          fontSize={fontSize}
+          
         />
       </div>
     </div>

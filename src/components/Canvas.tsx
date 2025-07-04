@@ -12,7 +12,7 @@ interface CanvasProps {
   onDrawing: (drawing: DrawingData) => void;
   onCursor: (cursor: CursorData) => void;
   fillMode?: boolean;
-  fontSize?: number;
+  
 }
 
 export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
@@ -26,7 +26,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
     onDrawing,
     onCursor,
     fillMode = false,
-    fontSize = 16,
+    
   },
   ref
 ) => {
@@ -35,7 +35,6 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const [startPoint, setStartPoint] = useState<Point | null>(null);
-  const [textInput, setTextInput] = useState<{ point: Point; value: string } | null>(null);
 
   const drawOnCanvas = useCallback((ctx: CanvasRenderingContext2D, drawingData: DrawingData) => {
     ctx.save();
@@ -91,13 +90,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
         }
         break;
 
-      case 'text':
-        if (drawingData.text && drawingData.points.length > 0) {
-          ctx.font = `${drawingData.fontSize || fontSize}px Arial`;
-          ctx.fillStyle = drawingData.color;
-          ctx.fillText(drawingData.text, drawingData.points[0].x, drawingData.points[0].y);
-        }
-        break;
+      
 
       case 'eraser':
         if (drawingData.points.length > 1) {
@@ -113,7 +106,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
     }
 
     ctx.restore();
-  }, [fontSize]);
+  }, []);
 
   const redrawCanvas = useCallback(() => {
     const canvas = ref.current;
@@ -214,10 +207,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
     const point = getPointFromEvent(e);
     setIsDrawing(true);
     
-    if (tool === 'text') {
-      setTextInput({ point, value: '' });
-      return;
-    }
+    
 
     if (tool === 'pen' || tool === 'eraser') {
       setCurrentPath([point]);
@@ -279,23 +269,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
     onCursor({ userId: currentUser.id, x: 0, y: 0, isDrawing: false });
   };
 
-  const handleTextSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && textInput) {
-      const drawingData: DrawingData = {
-        id: uuidv4(),
-        type: 'text',
-        points: [textInput.point],
-        color,
-        strokeWidth,
-        text: textInput.value,
-        fontSize,
-        timestamp: Date.now(),
-        userId: currentUser.id,
-      };
-      onDrawing(drawingData);
-      setTextInput(null);
-    }
-  };
+  
 
   return (
     <div className="relative w-full h-full">
@@ -308,23 +282,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>((
         onMouseLeave={() => setIsDrawing(false)}
       />
       
-      {textInput && (
-        <input
-          type="text"
-          value={textInput.value}
-          onChange={(e) => setTextInput({ ...textInput, value: e.target.value })}
-          onKeyDown={handleTextSubmit}
-          onBlur={() => setTextInput(null)}
-          className="absolute border-2 border-blue-500 bg-white px-2 py-1 outline-none"
-          style={{
-            left: textInput.point.x,
-            top: textInput.point.y,
-            fontSize: `${fontSize}px`,
-            color: color,
-          }}
-          autoFocus
-        />
-      )}
+      
     </div>
   );
 });
